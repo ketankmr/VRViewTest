@@ -1,16 +1,24 @@
 package com.example.vrviewtest
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.squareup.picasso.Picasso
-import com.squareup.picasso.Target
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import kotlinx.android.synthetic.main.activity_image360.*
+import java.lang.Exception
 
 class Image360Activity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,25 +26,28 @@ class Image360Activity : AppCompatActivity() {
         setContentView(R.layout.activity_image360)
         video_view.initialize()
 
-        val target = object :Target{
-            override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
-                Toast.makeText(this@Image360Activity,"onPrepareLoad",Toast.LENGTH_LONG).show()
+        registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val path = intent?.getStringExtra("url")
+                path?.let {
+                    loadImage(it)
+                }
             }
+        }, IntentFilter("co.sensara.vrviewtest.LoadImage"))
+    }
 
-            override fun onBitmapFailed(errorDrawable: Drawable?) {
-                Toast.makeText(this@Image360Activity,"onBitmapFailed",Toast.LENGTH_LONG).show()
-            }
+    private fun loadImage (imagePath:String){
 
-            override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
-                Toast.makeText(this@Image360Activity,"onBitmapLoaded",Toast.LENGTH_LONG).show()
-                video_view.loadMedia(bitmap)
-            }
-        }
-
-        PicassoUtils
-            .getPicasso()
-            .load("http://sensara-static-files.sensara.tv/uploads/android/71557812e5974be6bab55a1c08ecd0b2/interior_360.jpeg")
-            .into(target)
+        Glide.with(this)
+                .asBitmap()
+                .load(imagePath)
+                .into(object : CustomTarget<Bitmap>(){
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        video_view.loadMedia(resource)
+                    }
+                    override fun onLoadCleared(placeholder: Drawable?) {
+                    }
+                })
     }
 
     private var posX: Float = 0.0f
